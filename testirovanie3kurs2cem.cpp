@@ -1,7 +1,4 @@
 ﻿/**
- * @file testirovanie3kurs2cem.cpp
- * @brief Система управления библиотекой
- * 
  * В программе реализована иерархия изданий:
  * Publication -> Book, Magazine, Newspaper.
  *
@@ -23,7 +20,7 @@
  * }
  * \enddot
  *
- * \image html library_diagram.png
+ * \image html library_diagram.png "Схема иерархии классов"
  */
 
 #include <iostream>
@@ -31,6 +28,9 @@
 #include <vector>
 #include <memory>
 #include <limits>
+#define NOMINMAX
+#include <windows.h>
+
 
 using namespace std;
 
@@ -42,34 +42,30 @@ using namespace std;
  * Содержит чисто виртуальные методы, которые обязательно
  * должны переопределить наследники.
  *
- * Формула, по которой можно посчитать возраст издания:
- * \f[
- * age = current\_year - publication\_year
- * \f]
+ * Возраст издания вычисляется по формуле:
+ * \f$ age = current\_year - publication\_year \f$
  */
 class Publication {
 protected:
-    string title;   // название
-    string author;  // автор
-    int year;       // год издания
+    string title;
+    string author;
+    int year;  // Год издания должен быть в диапазоне от 1000 до 2026
 
 public:
-    // Конструктор — просто запоминаем переданные значения
     Publication(const string& t, const string& a, int y)
         : title(t), author(a), year(y) {}
 
-    // Виртуальный деструктор, чтобы корректно удалять наследников
+    // Виртуальный деструктор необходим для корректного удаления объектов наследников
     virtual ~Publication() {}
 
-    // Обычные геттеры — возвращают значения полей
     string getTitle() const { return title; }
     string getAuthor() const { return author; }
     int getYear() const { return year; }
 
-    // Эти методы каждый наследник реализует по-своему
-    virtual string getDescription() const = 0;      // полное описание
-    virtual string getType() const = 0;             // тип издания (книга/журнал/газета)
-    virtual string getAdditionalInfo() const = 0;   // дополнительная информация
+    // Чисто виртуальные методы — каждый наследник обязан их реализовать по-своему
+    virtual string getDescription() const = 0;
+    virtual string getType() const = 0;
+    virtual string getAdditionalInfo() const = 0;
 };
 
 /**
@@ -78,18 +74,17 @@ public:
  */
 class Book : public Publication {
 private:
-    string isbn;  // ISBN книги
-    int pages;    // сколько страниц
+    string isbn;
+    int pages;
 
 public:
-    // Конструктор — вызываем родительский и сохраняем свои поля
     Book(const string& t, const string& a, int y, const string& isbn, int p)
         : Publication(t, a, y), isbn(isbn), pages(p) {}
 
     string getISBN() const { return isbn; }
     int getPages() const { return pages; }
 
-    // Переопределяем виртуальные методы родителя
+    // Формируем полное описание книги для вывода в консоль
     string getDescription() const override {
         return "Книга: \"" + title + "\", " + author + " (" + to_string(year) + ")";
     }
@@ -109,8 +104,8 @@ public:
  */
 class Magazine : public Publication {
 private:
-    int issueNumber;  // номер выпуска
-    string month;     // месяц издания
+    int issueNumber;
+    string month;
 
 public:
     Magazine(const string& t, const string& a, int y, int issue, const string& m)
@@ -138,9 +133,9 @@ public:
  */
 class Newspaper : public Publication {
 private:
-    int day;           // день выхода
-    int month_num;     // месяц числом
-    int editionNumber; // номер выпуска
+    int day;
+    int month_num;
+    int editionNumber;
 
 public:
     Newspaper(const string& t, const string& a, int y, int d, int m, int edition)
@@ -167,30 +162,30 @@ public:
  * @class Library
  * @brief Хранит все издания и умеет их выводить, искать и считать статистику.
  *
- * Внутри все издания лежат в векторе из умных указателей shared_ptr.
- * Это чтобы не думать о ручном удалении объектов.
+ * Все издания хранятся в векторе из shared_ptr — это гарантирует,
+ * что память освободится автоматически при удалении библиотеки.
  */
 class Library {
 private:
-    string name;                              // название библиотеки
-    vector<shared_ptr<Publication>> publications;  // список всех изданий
+    string name;
+    // Используем shared_ptr, чтобы не следить за удалением объектов вручную
+    vector<shared_ptr<Publication>> publications;
 
 public:
     Library(const string& n) : name(n) {}
 
-    // Добавить новое издание в библиотеку
+    // Добавляет издание в конец списка
     void addPublication(shared_ptr<Publication> pub) {
         publications.push_back(pub);
     }
 
-    // Сколько всего изданий
     size_t getPublicationCount() const {
         return publications.size();
     }
 
     string getName() const { return name; }
 
-    // Вывести вообще всё, что есть в библиотеке
+    // Выводит все издания с полной информацией о каждом
     void printAllPublications() const {
         cout << "\n========== " << name << " ==========" << endl;
         cout << "Всего изданий: " << publications.size() << endl;
@@ -202,7 +197,7 @@ public:
         }
     }
 
-    // Найти все издания конкретного автора
+    // Ищет все издания конкретного автора (точное совпадение)
     vector<shared_ptr<Publication>> findByAuthor(const string& author) const {
         vector<shared_ptr<Publication>> result;
         for (const auto& pub : publications) {
@@ -213,7 +208,7 @@ public:
         return result;
     }
 
-    // Вывести статистику: сколько книг, журналов, газет
+    // Подсчитывает количество изданий каждого типа
     void printStatistics() const {
         int books = 0, magazines = 0, newspapers = 0;
         for (const auto& pub : publications) {
@@ -231,11 +226,11 @@ public:
 };
 
 /**
- * @brief Безопасный ввод целого числа с проверкой.
+ * @brief Безопасный ввод целого числа — защита от случайного ввода букв.
  *
- * Если пользователь ввёл не число, функция попросит ввести заново.
- * @param prompt Подсказка, которую выводим перед вводом
- * @return Введённое число
+ * Если пользователь введёт не число, функция очистит буфер и попросит повторить ввод.
+ * @param prompt Текст-подсказка перед вводом
+ * @return Корректное целое число
  */
 int inputInt(const string& prompt) {
     int value;
@@ -243,6 +238,7 @@ int inputInt(const string& prompt) {
         cout << prompt;
         cin >> value;
         if (cin.fail()) {
+            // Очищаем флаг ошибки и сбрасываем некорректный ввод из буфера
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
             cout << "Ошибка! Введите целое число." << endl;
@@ -256,7 +252,7 @@ int inputInt(const string& prompt) {
 
 /**
  * @brief Безопасный ввод строки.
- * @param prompt Подсказка перед вводом
+ * @param prompt Текст-подсказка перед вводом
  * @return Введённая строка
  */
 string inputString(const string& prompt) {
@@ -267,20 +263,21 @@ string inputString(const string& prompt) {
 }
 
 /**
- * @brief Точка входа в программу. Показывает меню и обрабатывает выбор.
+ * @brief Точка входа в программу. Показывает меню и обрабатывает выбор пользователя.
  *
  * Пользователь может добавлять книги/журналы/газеты,
  * смотреть весь каталог, искать по автору и смотреть статистику.
  */
 int main() {
-    // Настройка русского языка в консоли
+    // Настройка консоли для корректного отображения русского языка
     setlocale(LC_ALL, "ru");
+    SetConsoleCP(1251);
+    SetConsoleOutputCP(1251);
 
     Library library("Центральная городская библиотека");
 
     bool running = true;
     while (running) {
-        // Вывод меню
         cout << "\n========================================" << endl;
         cout << "    СИСТЕМА УПРАВЛЕНИЯ БИБЛИОТЕКОЙ      " << endl;
         cout << "========================================" << endl;
@@ -297,7 +294,6 @@ int main() {
 
         switch (choice) {
         case 1: {
-            // Добавление книги
             cout << "\n--- ДОБАВЛЕНИЕ КНИГИ ---" << endl;
             string title = inputString("Название: ");
             string author = inputString("Автор: ");
@@ -305,12 +301,12 @@ int main() {
             string isbn = inputString("ISBN: ");
             int pages = inputInt("Количество страниц: ");
 
+            // make_shared автоматически выделяет память и возвращает умный указатель
             library.addPublication(make_shared<Book>(title, author, year, isbn, pages));
             cout << "Книга добавлена!" << endl;
             break;
         }
         case 2: {
-            // Добавление журнала
             cout << "\n--- ДОБАВЛЕНИЕ ЖУРНАЛА ---" << endl;
             string title = inputString("Название: ");
             string author = inputString("Редакция/автор: ");
@@ -323,7 +319,6 @@ int main() {
             break;
         }
         case 3: {
-            // Добавление газеты
             cout << "\n--- ДОБАВЛЕНИЕ ГАЗЕТЫ ---" << endl;
             string title = inputString("Название: ");
             string author = inputString("Издатель: ");
@@ -337,12 +332,10 @@ int main() {
             break;
         }
         case 4: {
-            // Показать всё
             library.printAllPublications();
             break;
         }
         case 5: {
-            // Поиск по автору
             cout << "\n--- ПОИСК ПО АВТОРУ ---" << endl;
             string author = inputString("Введите автора: ");
             auto results = library.findByAuthor(author);
@@ -358,12 +351,10 @@ int main() {
             break;
         }
         case 6: {
-            // Статистика
             library.printStatistics();
             break;
         }
         case 7: {
-            // Выход
             running = false;
             cout << "Программа завершена." << endl;
             break;
